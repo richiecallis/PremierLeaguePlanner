@@ -1,0 +1,1878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Premier League 2026-27 — Coverage Planner</title>
+<style>
+  :root{
+    --bg:#0f1115;
+    --panel:#171a21;
+    --panel-2:#1e222b;
+    --border:#2a2f3a;
+    --text:#eef0f4;
+    --text-dim:#9aa2b1;
+    --accent:#5b8cff;
+    --accent-2:#8b5cf6;
+    --good:#2fbf71;
+    --warn:#e0a736;
+    --bad:#e0546b;
+    --hired:#38bdf8;
+    --urgent:#fb5b3f;
+    --radius:12px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.4;
+  }
+  header{
+    padding:24px 28px 16px;
+    border-bottom:1px solid var(--border);
+    position:sticky;
+    top:0;
+    background:rgba(15,17,21,0.95);
+    backdrop-filter:blur(6px);
+    z-index:10;
+  }
+  header h1{
+    margin:0 0 4px;
+    font-size:20px;
+    font-weight:650;
+    letter-spacing:-0.01em;
+  }
+  header p.sub{
+    margin:0;
+    color:var(--text-dim);
+    font-size:13px;
+  }
+  .toolbar{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  .save-status{
+    font-size:12px;
+    color:var(--text-dim);
+    white-space:nowrap;
+  }
+  .save-status.saved::before{
+    content:'●';
+    color:var(--good);
+    margin-right:5px;
+    font-size:9px;
+    vertical-align:middle;
+  }
+  .tabs{
+    display:flex;
+    gap:4px;
+    background:var(--panel);
+    padding:4px;
+    border-radius:10px;
+    border:1px solid var(--border);
+  }
+  .tab-btn{
+    appearance:none;
+    border:none;
+    background:transparent;
+    color:var(--text-dim);
+    padding:8px 16px;
+    border-radius:7px;
+    font-size:13.5px;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .tab-btn.active{
+    background:var(--accent);
+    color:white;
+  }
+  .tab-btn:not(.active):hover{
+    color:var(--text);
+    background:var(--panel-2);
+  }
+  .spacer{flex:1;}
+  .btn{
+    appearance:none;
+    border:1px solid var(--border);
+    background:var(--panel-2);
+    color:var(--text);
+    padding:8px 14px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .btn:hover{border-color:var(--accent);}
+  .btn.active-filter{background:var(--panel-2);border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);color:var(--accent);}
+  main{
+    padding:22px 28px 60px;
+    max-width:980px;
+    margin:0 auto;
+  }
+  .panel{display:none;}
+  .panel.active{display:block;}
+  .summary-bar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:20px;
+  }
+  .stat{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 16px;
+    min-width:120px;
+  }
+  .stat .num{font-size:22px;font-weight:700;}
+  .stat .label{font-size:11.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.04em;}
+  .stat.good .num{color:var(--good);}
+  .stat.bad .num{color:var(--bad);}
+  .stat.warn .num{color:var(--warn);}
+  .stat.hired .num{color:var(--hired);}
+  .stat.urgent .num{color:var(--urgent);}
+  .stat.urgent.has-items{border-color:var(--urgent);box-shadow:0 0 0 1px var(--urgent);}
+  .stat.money{border-color:var(--accent-2);}
+  .stat.money .num{color:var(--accent-2);}
+
+  .mw-group{
+    margin-bottom:26px;
+  }
+  .mw-heading{
+    display:flex;
+    align-items:baseline;
+    gap:10px;
+    margin-bottom:10px;
+    padding-bottom:6px;
+    border-bottom:1px solid var(--border);
+  }
+  .mw-heading h2{
+    font-size:15px;
+    margin:0;
+    font-weight:700;
+  }
+  .mw-heading .range{
+    font-size:12.5px;
+    color:var(--text-dim);
+  }
+  .match-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-bottom:10px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .match-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .teams{
+    font-size:14.5px;
+    font-weight:650;
+  }
+  .teams .vs{color:var(--text-dim);font-weight:500;margin:0 6px;}
+  .when{
+    font-size:12.5px;
+    color:var(--text-dim);
+    white-space:nowrap;
+  }
+  .when .confirmed{color:var(--good);}
+  .when .provisional::after{content:" (provisional)";color:var(--warn);}
+  .coverage-row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:flex-start;
+  }
+  select.status-select{
+    background:var(--panel-2);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:7px 10px;
+    font-size:12.5px;
+    font-weight:600;
+  }
+  select.status-select[data-status="requested"]{ color:var(--warn); }
+  select.status-select[data-status="confirmed"]{ color:var(--good); }
+  select.status-select[data-status="declined"]{ color:var(--bad); }
+  select.status-select[data-status="hired"]{ color:var(--hired); }
+  select.status-select[data-status="covered"]{ color:var(--good); }
+  select.status-select[data-status="not_covered"]{ color:var(--bad); }
+  textarea.note-box{
+    flex:1;
+    min-width:220px;
+    background:var(--panel-2);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:8px 10px;
+    font-size:13px;
+    font-family:inherit;
+    resize:vertical;
+    min-height:38px;
+  }
+  textarea.note-box::placeholder{color:var(--text-dim);}
+  .import-log-line{
+    font-size:11px;
+    color:var(--text-dim);
+    font-style:italic;
+    margin-bottom:4px;
+  }
+  input.person-box{
+    min-width:200px;
+    background:var(--panel-2);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:8px 10px;
+    font-size:13px;
+    font-weight:600;
+    font-family:inherit;
+  }
+  input.person-box::placeholder{color:var(--text-dim);font-weight:500;}
+  input.person-box.auto-filled{border-color:var(--accent);}
+  .field-label{
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--text-dim);
+    display:block;
+    margin-bottom:4px;
+  }
+  .field-group{display:flex;flex-direction:column;}
+  .fee-row{
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .fee-prefix{color:var(--text-dim);font-weight:600;font-size:13px;}
+  input.fee-box{
+    width:88px;
+    background:var(--panel-2);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:8px 9px;
+    font-size:13px;
+    font-weight:600;
+    font-family:inherit;
+  }
+  input.fee-box.paid{
+    opacity:.5;
+    background:var(--panel);
+    color:var(--text-dim);
+    text-decoration:line-through;
+  }
+  input.fee-box:disabled{cursor:not-allowed;}
+  .paid-check{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    font-size:12px;
+    color:var(--text-dim);
+    cursor:pointer;
+    user-select:none;
+    white-space:nowrap;
+  }
+  .paid-check input{cursor:pointer;width:15px;height:15px;}
+
+  .income-section{
+    border-top:1px dashed var(--border);
+    margin-top:2px;
+    padding-top:10px;
+  }
+  .income-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin:8px 0;
+  }
+  .income-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  input.client-box{
+    flex:1;
+    min-width:160px;
+    background:var(--panel-2);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:8px 10px;
+    font-size:13px;
+    font-weight:600;
+    font-family:inherit;
+  }
+  .remove-income-btn{
+    appearance:none;
+    border:1px solid var(--border);
+    background:var(--panel-2);
+    color:var(--text-dim);
+    width:28px;
+    height:28px;
+    border-radius:7px;
+    cursor:pointer;
+    font-size:13px;
+    line-height:1;
+  }
+  .remove-income-btn:hover{color:var(--bad);border-color:var(--bad);}
+  .btn.small{padding:6px 12px;font-size:12px;}
+
+  .stat.clickable{cursor:pointer;transition:border-color .15s ease, background .15s ease;}
+  .stat.clickable:hover{border-color:var(--accent);}
+  .stat.active-filter{background:var(--panel-2);border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);}
+  .stat.money-in{border-color:var(--good);}
+  .stat.money-in .num{color:var(--good);}
+
+  .modal-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.65);
+    z-index:100;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal-box{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    max-width:840px;
+    width:100%;
+    max-height:82vh;
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+  }
+  .modal-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:16px 20px;
+    border-bottom:1px solid var(--border);
+  }
+  .modal-header h3{margin:0;font-size:16px;}
+  .modal-filters{
+    display:flex;
+    gap:14px;
+    align-items:flex-end;
+    padding:14px 20px;
+    border-bottom:1px solid var(--border);
+    flex-wrap:wrap;
+  }
+  .modal-total{
+    font-size:15px;
+    font-weight:700;
+    color:var(--good);
+    margin-left:auto;
+  }
+  .modal-table-wrap{
+    overflow:auto;
+    padding:4px 20px 20px;
+  }
+  .modal-table-wrap table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  .modal-table-wrap th, .modal-table-wrap td{
+    text-align:left;
+    padding:9px 10px;
+    border-bottom:1px solid var(--border);
+    white-space:nowrap;
+  }
+  .modal-table-wrap th{
+    color:var(--text-dim);
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    position:sticky;
+    top:0;
+    background:var(--panel);
+  }
+
+  .page-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.7);
+    z-index:90;
+    align-items:flex-start;
+    justify-content:center;
+    padding:30px 20px 60px;
+    overflow:auto;
+  }
+  .page-overlay.open{display:flex;}
+  .page-box{
+    background:var(--bg);
+    border:1px solid var(--border);
+    border-radius:14px;
+    max-width:1000px;
+    width:100%;
+    padding:22px 26px 30px;
+  }
+  .page-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+    margin-bottom:18px;
+    padding-bottom:16px;
+    border-bottom:1px solid var(--border);
+  }
+  .page-header h2{margin:0 0 6px;font-size:19px;}
+  .page-sub{margin:0;color:var(--text-dim);font-size:12.5px;max-width:660px;}
+
+  .future-mw{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    margin-bottom:10px;
+    overflow:hidden;
+  }
+  .future-mw summary{
+    padding:12px 16px;
+    cursor:pointer;
+    font-weight:650;
+    font-size:14px;
+    display:flex;
+    justify-content:space-between;
+    list-style:none;
+  }
+  .future-mw summary::-webkit-details-marker{display:none;}
+  .future-mw summary .range{color:var(--text-dim);font-weight:500;font-size:12.5px;}
+  .future-mw-body{
+    padding:12px 16px 16px;
+    border-top:1px solid var(--border);
+  }
+  .future-mw-body .match-card:last-child{margin-bottom:0;}
+  .future-match{
+    padding:8px 16px;
+    border-top:1px solid var(--border);
+    font-size:13.5px;
+    display:flex;
+    justify-content:space-between;
+    color:var(--text-dim);
+  }
+  .future-match .teams{color:var(--text);font-weight:600;font-size:13.5px;}
+  .future-match .badge{
+    font-size:11px;
+    font-weight:700;
+    padding:2px 7px;
+    border-radius:5px;
+    margin-left:8px;
+  }
+  .badge-confirmed{background:rgba(47,191,113,.15);color:var(--good);}
+  .badge-requested{background:rgba(224,167,54,.15);color:var(--warn);}
+  .badge-declined{background:rgba(224,84,107,.15);color:var(--bad);}
+  .badge-covered{background:rgba(47,191,113,.15);color:var(--good);}
+  .badge-not_covered{background:rgba(224,84,107,.15);color:var(--bad);}
+
+  .filter-bar{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    align-items:flex-end;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:18px;
+  }
+  .filter-field{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .filter-field label{
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    color:var(--text-dim);
+  }
+  .filter-field select, .filter-field input[type="date"]{
+    background:var(--panel-2);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:7px;
+    padding:7px 9px;
+    font-size:12.5px;
+    font-family:inherit;
+  }
+  .filter-field.date-range{flex-direction:row;align-items:flex-end;gap:6px;}
+  .filter-field.date-range > div{display:flex;flex-direction:column;gap:4px;}
+  .filter-clear-wrap{display:flex;align-items:flex-end;}
+  .filter-count{
+    font-size:12px;
+    color:var(--text-dim);
+    margin-left:auto;
+    align-self:center;
+  }
+
+  footer{
+    padding:18px 28px 40px;
+    color:var(--text-dim);
+    font-size:12px;
+    max-width:980px;
+    margin:0 auto;
+  }
+  footer a{color:var(--accent);}
+  .empty-state{
+    color:var(--text-dim);
+    font-size:13.5px;
+    padding:30px;
+    text-align:center;
+    border:1px dashed var(--border);
+    border-radius:12px;
+  }
+  input#import-file{display:none;}
+
+  .paste-panel{
+    max-width:980px;
+    margin:18px auto 0;
+    padding:0 28px;
+  }
+  .paste-panel details{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .paste-panel summary{
+    padding:12px 16px;
+    cursor:pointer;
+    font-weight:650;
+    font-size:14px;
+    list-style:none;
+  }
+  .paste-panel summary::-webkit-details-marker{display:none;}
+  .paste-panel summary::before{content:"▸ ";color:var(--text-dim);}
+  .paste-panel details[open] summary::before{content:"▾ ";}
+  .paste-body{
+    padding:0 16px 16px;
+  }
+  .paste-body p{
+    color:var(--text-dim);
+    font-size:12.5px;
+    margin:0 0 10px;
+  }
+  textarea#paste-input{
+    width:100%;
+    min-height:130px;
+    background:var(--panel-2);
+    color:var(--text);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:10px 12px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:12px;
+    resize:vertical;
+  }
+  .paste-actions{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    margin-top:10px;
+  }
+  #paste-log{
+    margin-top:12px;
+    font-size:12.5px;
+    color:var(--text-dim);
+  }
+  #paste-log .ok{color:var(--good);font-weight:700;}
+  #paste-log .bad{color:var(--bad);font-weight:700;}
+  #paste-log ul{margin:6px 0 0;padding-left:18px;}
+  #paste-log li{margin-bottom:3px;}
+</style>
+</head>
+<body>
+
+<div class="modal-overlay" id="owed-modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="owed-modal-title">Outstanding</h3>
+      <button class="btn" id="owed-modal-close">Close</button>
+    </div>
+    <div class="modal-filters">
+      <div class="filter-field">
+        <label id="owed-modal-filter-label">Client</label>
+        <select id="owed-modal-filter"></select>
+      </div>
+      <button class="btn" id="owed-modal-export">Export CSV</button>
+      <div class="modal-total" id="owed-modal-total"></div>
+    </div>
+    <div class="modal-table-wrap">
+      <table id="owed-modal-table">
+        <thead></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="page-overlay" id="other-page-overlay">
+  <div class="page-box">
+    <div class="page-header">
+      <div>
+        <h2>Other Matches</h2>
+        <p class="page-sub">Games pasted from your tracker that aren't part of the 2026-27 Premier League fixture list — lower-league, cup ties between clubs, friendlies, anything else. Track status, photographer, fee and client income here exactly like the main page.</p>
+      </div>
+      <button class="btn" id="other-page-close">Close</button>
+    </div>
+    <div class="filter-bar" id="filter-bar-other"></div>
+    <div id="other-content"></div>
+  </div>
+</div>
+
+<header>
+  <h1>Premier League 2026-27 — Coverage Planner</h1>
+  <p class="sub">Past · Present · Future, built from the 2026-27 fixture list. The photographer you enter under "Requested" on the Present tab carries automatically into "Covered by" once that matchweek moves to Past. Everything auto-saves in this browser as you go — use Export for a backup or to move your data to another device/browser.</p>
+  <div class="toolbar">
+    <div class="tabs">
+      <button class="tab-btn" data-tab="present">Present</button>
+      <button class="tab-btn" data-tab="past">Past</button>
+      <button class="tab-btn" data-tab="future">Future</button>
+    </div>
+    <div class="spacer"></div>
+    <span class="save-status" id="save-status"></span>
+    <button class="btn" id="other-matches-btn">Other Matches</button>
+    <button class="btn" id="export-btn">Export data (.json)</button>
+    <button class="btn" id="import-btn">Import data (.json)</button>
+    <input type="file" id="import-file" accept="application/json">
+  </div>
+</header>
+
+<div class="paste-panel">
+  <details id="paste-details">
+    <summary>Paste photographer assignments from your spreadsheet</summary>
+    <div class="paste-body">
+      <p>Paste rows copied straight from your tracker (status, name, role, date &amp; fixture, etc. — tab-separated). Each row is matched to a fixture by date and team names, however far away it is, and fills in the status + requested photographer automatically. Re-pasting updates existing matches and never overwrites anything you've typed in a Notes box — the raw import history shows separately above each Notes field. Rows for games that aren't in this season's Premier League fixture list — a lower-league match, a cup tie, anything on a date that doesn't match — are automatically skipped and listed below instead of being applied.</p>
+      <textarea id="paste-input" placeholder="Rejected&#9;Daniel Weir&#9;Photographer&#9;IW&#9;21/08/2026 - Arsenal vs Coventry City&#9;12/08/2026
+Pending&#9;Keeran Marquis&#9;Photographer&#9;&#9;22/08/2026 - Ipswich Town vs Sunderland AFC&#9;12/08/2026"></textarea>
+      <div class="paste-actions">
+        <button class="btn" id="paste-apply-btn">Match &amp; fill in</button>
+        <button class="btn" id="paste-clear-btn">Clear</button>
+      </div>
+      <div id="paste-log"></div>
+    </div>
+  </details>
+</div>
+
+<main>
+  <section class="panel" id="panel-present">
+    <div class="summary-bar" id="present-summary"></div>
+    <div class="filter-bar" id="filter-bar-present"></div>
+    <div id="present-content"></div>
+  </section>
+
+  <section class="panel" id="panel-past">
+    <div class="summary-bar" id="past-summary"></div>
+    <div class="filter-bar" id="filter-bar-past"></div>
+    <div id="past-content"></div>
+  </section>
+
+  <section class="panel" id="panel-future">
+    <div class="filter-bar" id="filter-bar-future"></div>
+    <div id="future-content"></div>
+  </section>
+</main>
+
+<footer>
+  Season structure: 38 matchweeks (33 weekend rounds + 5 midweek rounds), 380 matches total. Exact kickoff dates/times are individually confirmed by broadcasters in rolling windows — until then a match shows its round's provisional date range. Source: <a href="https://www.premierleague.com/en/matches/premier-league/2026-27" target="_blank" rel="noopener">premierleague.com</a>.
+</footer>
+
+<script id="fixtures-data" type="application/json">{"competition": "Premier League", "season": "2026-27", "source": "https://www.premierleague.com/en/matches/premier-league/2026-27", "generated": "2026-08-19", "notes": "Round dates (roundStart/roundEnd) reflect the official weekend/midweek block for each matchweek. Exact per-match dates and UK kickoff times are only individually confirmed for Matchweeks 1-2 so far (status: confirmed); all later matches carry the round's provisional date range until broadcasters confirm exact dates/times (status: provisional), which typically happens in rolling ~6-8 week windows.", "matchweeks": [{"matchweek": 1, "roundStart": "2026-08-21", "roundEnd": "2026-08-24", "matches": [{"homeTeam": "Arsenal", "awayTeam": "Coventry City", "date": "2026-08-21", "kickoffUK": "20:00", "status": "confirmed"}, {"homeTeam": "Hull City", "awayTeam": "Manchester United", "date": "2026-08-22", "kickoffUK": "12:30", "status": "confirmed"}, {"homeTeam": "Everton", "awayTeam": "Crystal Palace", "date": "2026-08-22", "kickoffUK": "15:00", "status": "confirmed"}, {"homeTeam": "Ipswich Town", "awayTeam": "Sunderland", "date": "2026-08-22", "kickoffUK": "15:00", "status": "confirmed"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Leeds United", "date": "2026-08-22", "kickoffUK": "15:00", "status": "confirmed"}, {"homeTeam": "Brentford", "awayTeam": "Tottenham Hotspur", "date": "2026-08-22", "kickoffUK": "17:30", "status": "confirmed"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Aston Villa", "date": "2026-08-23", "kickoffUK": "14:00", "status": "confirmed"}, {"homeTeam": "Manchester City", "awayTeam": "AFC Bournemouth", "date": "2026-08-23", "kickoffUK": "14:00", "status": "confirmed"}, {"homeTeam": "Newcastle United", "awayTeam": "Liverpool", "date": "2026-08-23", "kickoffUK": "16:30", "status": "confirmed"}, {"homeTeam": "Fulham", "awayTeam": "Chelsea", "date": "2026-08-24", "kickoffUK": "20:00", "status": "confirmed"}]}, {"matchweek": 2, "roundStart": "2026-08-28", "roundEnd": "2026-08-31", "matches": [{"homeTeam": "Crystal Palace", "awayTeam": "Manchester City", "date": "2026-08-28", "kickoffUK": "20:00", "status": "confirmed"}, {"homeTeam": "Liverpool", "awayTeam": "Nottingham Forest", "date": "2026-08-29", "kickoffUK": "12:30", "status": "confirmed"}, {"homeTeam": "AFC Bournemouth", "awayTeam": "Everton", "date": "2026-08-29", "kickoffUK": "15:00", "status": "confirmed"}, {"homeTeam": "Coventry City", "awayTeam": "Hull City", "date": "2026-08-29", "kickoffUK": "15:00", "status": "confirmed"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Newcastle United", "date": "2026-08-29", "kickoffUK": "17:30", "status": "confirmed"}, {"homeTeam": "Chelsea", "awayTeam": "Brighton & Hove Albion", "date": "2026-08-30", "kickoffUK": "14:00", "status": "confirmed"}, {"homeTeam": "Leeds United", "awayTeam": "Brentford", "date": "2026-08-30", "kickoffUK": "14:00", "status": "confirmed"}, {"homeTeam": "Sunderland", "awayTeam": "Fulham", "date": "2026-08-30", "kickoffUK": "14:00", "status": "confirmed"}, {"homeTeam": "Manchester United", "awayTeam": "Ipswich Town", "date": "2026-08-30", "kickoffUK": "16:30", "status": "confirmed"}, {"homeTeam": "Aston Villa", "awayTeam": "Arsenal", "date": "2026-08-31", "kickoffUK": "20:00", "status": "confirmed"}]}, {"matchweek": 3, "roundStart": "2026-09-04", "roundEnd": "2026-09-06", "matches": [{"homeTeam": "Ipswich Town", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Arsenal", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 4, "roundStart": "2026-09-12", "roundEnd": "2026-09-14", "matches": [{"homeTeam": "AFC Bournemouth", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Aston Villa", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 5, "roundStart": "2026-09-18", "roundEnd": "2026-09-20", "matches": [{"homeTeam": "Brentford", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "AFC Bournemouth", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 6, "roundStart": "2026-10-10", "roundEnd": "2026-10-12", "matches": [{"homeTeam": "Arsenal", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Aston Villa", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 7, "roundStart": "2026-10-17", "roundEnd": "2026-10-19", "matches": [{"homeTeam": "Everton", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "AFC Bournemouth", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 8, "roundStart": "2026-10-23", "roundEnd": "2026-10-25", "matches": [{"homeTeam": "Ipswich Town", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Aston Villa", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Arsenal", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 9, "roundStart": "2026-10-31", "roundEnd": "2026-11-02", "matches": [{"homeTeam": "Chelsea", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "AFC Bournemouth", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Aston Villa", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 10, "roundStart": "2026-11-07", "roundEnd": "2026-11-07", "matches": [{"homeTeam": "Arsenal", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 11, "roundStart": "2026-11-21", "roundEnd": "2026-11-21", "matches": [{"homeTeam": "AFC Bournemouth", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Aston Villa", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 12, "roundStart": "2026-11-28", "roundEnd": "2026-11-28", "matches": [{"homeTeam": "Arsenal", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 13, "roundStart": "2026-12-02", "roundEnd": "2026-12-02", "matches": [{"homeTeam": "AFC Bournemouth", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Aston Villa", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 14, "roundStart": "2026-12-05", "roundEnd": "2026-12-05", "matches": [{"homeTeam": "AFC Bournemouth", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Aston Villa", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 15, "roundStart": "2026-12-12", "roundEnd": "2026-12-12", "matches": [{"homeTeam": "Arsenal", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 16, "roundStart": "2026-12-19", "roundEnd": "2026-12-19", "matches": [{"homeTeam": "AFC Bournemouth", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Arsenal", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 17, "roundStart": "2026-12-26", "roundEnd": "2026-12-26", "matches": [{"homeTeam": "Aston Villa", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 18, "roundStart": "2026-12-30", "roundEnd": "2026-12-30", "matches": [{"homeTeam": "Aston Villa", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 19, "roundStart": "2027-01-02", "roundEnd": "2027-01-02", "matches": [{"homeTeam": "AFC Bournemouth", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Arsenal", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 20, "roundStart": "2027-01-06", "roundEnd": "2027-01-06", "matches": [{"homeTeam": "Arsenal", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 21, "roundStart": "2027-01-16", "roundEnd": "2027-01-16", "matches": [{"homeTeam": "AFC Bournemouth", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Aston Villa", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 22, "roundStart": "2027-01-23", "roundEnd": "2027-01-23", "matches": [{"homeTeam": "Arsenal", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 23, "roundStart": "2027-01-30", "roundEnd": "2027-01-30", "matches": [{"homeTeam": "AFC Bournemouth", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Aston Villa", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 24, "roundStart": "2027-02-06", "roundEnd": "2027-02-06", "matches": [{"homeTeam": "Arsenal", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 25, "roundStart": "2027-02-10", "roundEnd": "2027-02-10", "matches": [{"homeTeam": "Aston Villa", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 26, "roundStart": "2027-02-20", "roundEnd": "2027-02-20", "matches": [{"homeTeam": "AFC Bournemouth", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Arsenal", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 27, "roundStart": "2027-02-27", "roundEnd": "2027-02-27", "matches": [{"homeTeam": "Aston Villa", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 28, "roundStart": "2027-03-03", "roundEnd": "2027-03-03", "matches": [{"homeTeam": "AFC Bournemouth", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Arsenal", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 29, "roundStart": "2027-03-13", "roundEnd": "2027-03-13", "matches": [{"homeTeam": "AFC Bournemouth", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Aston Villa", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 30, "roundStart": "2027-03-20", "roundEnd": "2027-03-20", "matches": [{"homeTeam": "Arsenal", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 31, "roundStart": "2027-04-10", "roundEnd": "2027-04-10", "matches": [{"homeTeam": "AFC Bournemouth", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Aston Villa", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 32, "roundStart": "2027-04-17", "roundEnd": "2027-04-17", "matches": [{"homeTeam": "Arsenal", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 33, "roundStart": "2027-04-24", "roundEnd": "2027-04-24", "matches": [{"homeTeam": "AFC Bournemouth", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Aston Villa", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 34, "roundStart": "2027-05-01", "roundEnd": "2027-05-01", "matches": [{"homeTeam": "Arsenal", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 35, "roundStart": "2027-05-08", "roundEnd": "2027-05-08", "matches": [{"homeTeam": "AFC Bournemouth", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 36, "roundStart": "2027-05-15", "roundEnd": "2027-05-15", "matches": [{"homeTeam": "Arsenal", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Aston Villa", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 37, "roundStart": "2027-05-23", "roundEnd": "2027-05-23", "matches": [{"homeTeam": "AFC Bournemouth", "awayTeam": "Chelsea", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brentford", "awayTeam": "Hull City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Brighton & Hove Albion", "awayTeam": "Liverpool", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Everton", "awayTeam": "Arsenal", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Fulham", "awayTeam": "Coventry City", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Leeds United", "awayTeam": "Sunderland", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester City", "awayTeam": "Aston Villa", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Newcastle United", "awayTeam": "Crystal Palace", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Nottingham Forest", "awayTeam": "Ipswich Town", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Tottenham Hotspur", "awayTeam": "Manchester United", "date": null, "kickoffUK": null, "status": "provisional"}]}, {"matchweek": 38, "roundStart": "2027-05-30", "roundEnd": "2027-05-30", "matches": [{"homeTeam": "Arsenal", "awayTeam": "Brighton & Hove Albion", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Aston Villa", "awayTeam": "Tottenham Hotspur", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Chelsea", "awayTeam": "Brentford", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Coventry City", "awayTeam": "Nottingham Forest", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Crystal Palace", "awayTeam": "Leeds United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Hull City", "awayTeam": "Newcastle United", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Ipswich Town", "awayTeam": "Everton", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Liverpool", "awayTeam": "AFC Bournemouth", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Manchester United", "awayTeam": "Fulham", "date": null, "kickoffUK": null, "status": "provisional"}, {"homeTeam": "Sunderland", "awayTeam": "Manchester City", "date": null, "kickoffUK": null, "status": "provisional"}]}]}</script>
+<script>
+(function(){
+  const DATA = JSON.parse(document.getElementById('fixtures-data').textContent);
+
+  // Flatten into a single match list with stable ids
+  const allMatches = [];
+  DATA.matchweeks.forEach(mw => {
+    mw.matches.forEach((m, i) => {
+      allMatches.push({
+        id: 'mw' + mw.matchweek + '-' + i,
+        matchweek: mw.matchweek,
+        roundStart: mw.roundStart,
+        roundEnd: mw.roundEnd,
+        homeTeam: m.homeTeam,
+        awayTeam: m.awayTeam,
+        date: m.date,
+        kickoffUK: m.kickoffUK,
+        dateStatus: m.status
+      });
+    });
+  });
+
+  // Coverage state (in-memory only for this session)
+  // person: the photographer name — shared between Present ("requested") and Past ("covered by")
+  // reqStatus: '' | 'requested' | 'confirmed' | 'declined'  (Present tab)
+  // coverStatus: '' | 'covered' | 'not_covered'              (Past tab)
+  // fee/paid: what YOU owe the photographer for this game
+  // income: [{ client, fee, paid }, ...] — what CLIENTS owe YOU for this game (can be several per game)
+  const coverage = {}; // id -> { person, reqStatus, coverStatus, notes, importLog, fee, paid, income: [], competition }
+  function getCov(id){
+    if(!coverage[id]) coverage[id] = { person: '', reqStatus: '', coverStatus: '', notes: '', importLog: '', fee: '', paid: false, income: [], competition: '' };
+    if(!coverage[id].income) coverage[id].income = []; // guard against older exports without this field
+    if(coverage[id].competition == null) coverage[id].competition = '';
+    return coverage[id];
+  }
+
+  // "Other Matches" — games pasted from your tracker that aren't in the 2026-27 Premier League list
+  // (lower-league, cup ties between PL clubs, friendlies, etc). Keyed by date+teams since there's no
+  // fixed fixture list to match against; coverage (status/person/fee/notes/...) reuses the same store above.
+  const otherMeta = {}; // id -> { date, home, away }
+  function otherKey(isoDate, home, away){
+    return 'other:' + isoDate + '|' + home.toLowerCase().replace(/\s+/g,' ').trim() + '|' + away.toLowerCase().replace(/\s+/g,' ').trim();
+  }
+  function getOtherMatchObj(id){
+    const meta = otherMeta[id];
+    return { id, homeTeam: meta.home, awayTeam: meta.away, date: meta.date, kickoffUK: null, roundStart: meta.date, roundEnd: meta.date, matchweek: null };
+  }
+  function allOtherMatches(){
+    return Object.keys(otherMeta).map(id => getOtherMatchObj(id)).sort((a,b) => (a.date || '').localeCompare(b.date || ''));
+  }
+  // An Other Match only counts as "complete" (and drops into the Past tab) once its date has gone by —
+  // same cutoff as Premier League matchweeks (today's games stay out of Past until the next day).
+  function isOtherMatchComplete(m){
+    return !!m.date && parseDate(m.date) < today;
+  }
+  function completedOtherMatches(){
+    return allOtherMatches().filter(isOtherMatchComplete);
+  }
+
+  function feeOwed(m){
+    const cov = getCov(m.id);
+    const fee = parseFloat(cov.fee);
+    return (!cov.paid && !isNaN(fee) && fee > 0) ? fee : 0;
+  }
+  function totalOwed(matchList){
+    return matchList.reduce((sum, m) => sum + feeOwed(m), 0);
+  }
+  function incomeOwed(m){
+    const cov = getCov(m.id);
+    return cov.income.reduce((sum, entry) => {
+      const fee = parseFloat(entry.fee);
+      return (!entry.paid && !isNaN(fee) && fee > 0) ? sum + fee : sum;
+    }, 0);
+  }
+  function totalIncomeOwed(matchList){
+    return matchList.reduce((sum, m) => sum + incomeOwed(m), 0);
+  }
+  function fmtMoney(n){
+    return '£' + n.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  }
+
+  // ---- filters (per tab) ----
+  const filters = {
+    present: { photographer: '', status: '', dateFrom: '', dateTo: '' },
+    past:    { photographer: '', status: '', dateFrom: '', dateTo: '' },
+    future:  { photographer: '', status: '', dateFrom: '', dateTo: '' },
+    other:   { photographer: '', status: '', dateFrom: '', dateTo: '', search: '' }
+  };
+
+  function matchPassesFilter(m, mode){
+    const f = filters[mode];
+    const cov = getCov(m.id);
+    if(f.photographer && (cov.person || '') !== f.photographer) return false;
+    if(f.status){
+      if(f.status === 'urgent'){
+        if(!isUrgent(m)) return false;
+      } else {
+        const statusField = mode === 'past' ? 'coverStatus' : 'reqStatus';
+        const val = cov[statusField] || '';
+        if(f.status === 'none' ? val !== '' : val !== f.status) return false;
+      }
+    }
+    if(f.dateFrom || f.dateTo){
+      const start = m.date || m.roundStart;
+      const end = m.date || m.roundEnd;
+      if(f.dateFrom && end < f.dateFrom) return false;
+      if(f.dateTo && start > f.dateTo) return false;
+    }
+    if(f.search){
+      const q = f.search.toLowerCase();
+      const hay = (m.homeTeam + ' ' + m.awayTeam + ' ' + (cov.competition || '')).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  }
+
+  // ---- date helpers ----
+  function parseDate(s){ // 'YYYY-MM-DD' -> Date at local midnight
+    const [y,m,d] = s.split('-').map(Number);
+    return new Date(y, m-1, d);
+  }
+  function todayMidnight(){
+    const t = new Date();
+    return new Date(t.getFullYear(), t.getMonth(), t.getDate());
+  }
+  function fmtDate(s){
+    if(!s) return '';
+    const d = parseDate(s);
+    return d.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short', year:'numeric'});
+  }
+  function fmtRange(start, end){
+    if(start === end) return fmtDate(start);
+    return fmtDate(start) + ' – ' + fmtDate(end);
+  }
+
+  const today = todayMidnight();
+
+  // Urgent = not requested at all, and due to be played within the next 7 days
+  // (using the confirmed date if we have one, otherwise the earliest day of the round).
+  function isUrgent(m){
+    const cov = getCov(m.id);
+    if((cov.reqStatus || '') !== '') return false;
+    const refDate = parseDate(m.date || m.roundStart);
+    const diffDays = Math.round((refDate - today) / 86400000);
+    return diffDays >= 0 && diffDays <= 7;
+  }
+
+  // Group matches by matchweek in order, determine which matchweeks are past
+  const mwList = DATA.matchweeks.map(mw => ({
+    matchweek: mw.matchweek,
+    roundStart: mw.roundStart,
+    roundEnd: mw.roundEnd,
+    isPast: parseDate(mw.roundEnd) < today
+  }));
+
+  const pastMWs = mwList.filter(mw => mw.isPast);
+  const notPastMWs = mwList.filter(mw => !mw.isPast);
+  const presentMWs = notPastMWs.slice(0, 3);
+  const futureMWs = notPastMWs.slice(3);
+
+  function matchesForMW(mwNum){
+    return allMatches.filter(m => m.matchweek === mwNum);
+  }
+
+  // ---- renderers ----
+  function whenLabel(m){
+    if(m.matchweek == null){
+      // "Other Matches" entry — just show the plain date, no provisional/confirmed styling
+      return '<span>' + fmtDate(m.date) + '</span>';
+    }
+    if(m.date && m.kickoffUK){
+      return '<span class="confirmed">' + fmtDate(m.date) + ' · ' + m.kickoffUK + ' UK</span>';
+    }
+    return '<span class="provisional">' + fmtRange(m.roundStart, m.roundEnd) + '</span>';
+  }
+
+  function escapeHtml(str){
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function renderCoverageCard(m, mode){
+    // mode: 'present', 'past', or 'future' — 'present' and 'future' share the request workflow, 'past' is the coverage record
+    const cov = getCov(m.id);
+    const statusField = mode === 'past' ? 'coverStatus' : 'reqStatus';
+    const statusVal = cov[statusField];
+    const statusOptions = mode === 'past'
+      ? [['', 'Unmarked'], ['covered','Covered'], ['not_covered','Not covered']]
+      : [['', 'Not requested'], ['requested','Requested'], ['confirmed','Confirmed'], ['declined','Declined'], ['hired','Hired freelancer'], ['pass','Pass']];
+    const personLabel = mode === 'past' ? 'Covered by' : (statusVal === 'hired' ? 'Freelancer hired' : 'Requested photographer');
+    const personPlaceholder = mode === 'past' ? 'Auto-filled from Present — edit if it changed' : 'Type or paste a name…';
+    const autoFilled = mode === 'past' && cov.person ? ' auto-filled' : '';
+
+    const optHtml = statusOptions.map(([val,label]) =>
+      '<option value="'+val+'"' + (statusVal===val?' selected':'') + '>' + label + '</option>'
+    ).join('');
+
+    const showFee = mode !== 'future';
+    const feeVal = (cov.fee !== '' && cov.fee != null) ? cov.fee : '';
+    const feeHtml = !showFee ? '' :
+      '<div class="field-group">'
+      +   '<span class="field-label">Photographer fee</span>'
+      +   '<div class="fee-row">'
+      +     '<span class="fee-prefix">£</span>'
+      +     '<input type="number" step="0.01" min="0" inputmode="decimal" class="fee-box'+(cov.paid?' paid':'')+'" data-field="fee" placeholder="0.00" value="'+escapeHtml(feeVal)+'"'+(cov.paid?' disabled':'')+'>'
+      +     '<label class="paid-check"><input type="checkbox" data-field="paid"'+(cov.paid?' checked':'')+'> Paid</label>'
+      +   '</div>'
+      + '</div>';
+
+    const incomeRowsHtml = !showFee ? '' : cov.income.map((entry, idx) => {
+      const eFeeVal = (entry.fee !== '' && entry.fee != null) ? entry.fee : '';
+      return '<div class="income-row" data-idx="'+idx+'">'
+        + '<input type="text" class="client-box" data-field="client" placeholder="Client name" value="'+escapeHtml(entry.client)+'">'
+        + '<span class="fee-prefix">£</span>'
+        + '<input type="number" step="0.01" min="0" inputmode="decimal" class="fee-box'+(entry.paid?' paid':'')+'" data-field="incomeFee" placeholder="0.00" value="'+escapeHtml(eFeeVal)+'"'+(entry.paid?' disabled':'')+'>'
+        + '<label class="paid-check"><input type="checkbox" data-field="incomePaid"'+(entry.paid?' checked':'')+'> Paid</label>'
+        + '<button type="button" class="remove-income-btn" title="Remove this client">✕</button>'
+        + '</div>';
+    }).join('');
+
+    const incomeHtml = !showFee ? '' :
+      '<div class="income-section">'
+      +   '<span class="field-label">Client income</span>'
+      +   '<div class="income-list">' + incomeRowsHtml + '</div>'
+      +   '<button type="button" class="btn small add-income-btn">+ Add client</button>'
+      + '</div>';
+
+    const competitionHtml = mode !== 'other' ? '' :
+      '<div class="field-group">'
+      +   '<span class="field-label">Competition / League</span>'
+      +   '<input type="text" class="person-box" data-field="competition" placeholder="e.g. Championship, FA Cup" value="' + escapeHtml(cov.competition) + '">'
+      + '</div>';
+
+    return '<div class="match-card" data-id="'+m.id+'">'
+      + '<div class="match-top">'
+      +   '<div class="teams">' + escapeHtml(m.homeTeam) + '<span class="vs">v</span>' + escapeHtml(m.awayTeam) + '</div>'
+      +   '<div class="when">' + whenLabel(m) + '</div>'
+      + '</div>'
+      + '<div class="coverage-row">'
+      +   '<select class="status-select" data-status="'+statusVal+'" data-field="'+statusField+'">' + optHtml + '</select>'
+      +   '<div class="field-group">'
+      +     '<span class="field-label">' + personLabel + '</span>'
+      +     '<input type="text" class="person-box'+autoFilled+'" data-field="person" placeholder="'+personPlaceholder+'" value="' + escapeHtml(cov.person) + '">'
+      +   '</div>'
+      +   competitionHtml
+      +   feeHtml
+      +   '<div class="field-group" style="flex:1;">'
+      +     '<span class="field-label">Notes</span>'
+      +     (cov.importLog ? '<div class="import-log-line">From spreadsheet import: ' + escapeHtml(cov.importLog) + '</div>' : '')
+      +     '<textarea class="note-box" data-field="notes" placeholder="Any extra notes… (kept even when you re-paste assignments)">' + escapeHtml(cov.notes) + '</textarea>'
+      +   '</div>'
+      + '</div>'
+      + incomeHtml
+      + '</div>';
+  }
+
+  function wireCard(el, m, mode){
+    const statusField = mode === 'past' ? 'coverStatus' : 'reqStatus';
+    const select = el.querySelector('select[data-field="'+statusField+'"]');
+    const person = el.querySelector('input[data-field="person"]');
+    const notes = el.querySelector('textarea[data-field="notes"]');
+    select.addEventListener('change', () => {
+      getCov(m.id)[statusField] = select.value;
+      select.setAttribute('data-status', select.value);
+      renderSummaries();
+      // "Other Matches" entries also appear inline under Past, so always resync there —
+      // not just when a filter would otherwise hide/show this card.
+      if(mode === 'other' || filterActive(mode)) renderForMode(mode);
+    });
+    person.addEventListener('input', () => {
+      getCov(m.id).person = person.value;
+      person.classList.remove('auto-filled');
+    });
+    person.addEventListener('blur', () => {
+      refreshPhotographerOptions();
+      if(mode === 'other' || filterActive(mode)) renderForMode(mode);
+    });
+    notes.addEventListener('input', () => {
+      getCov(m.id).notes = notes.value;
+    });
+    notes.addEventListener('blur', () => {
+      if(mode === 'other' || filterActive(mode)) renderForMode(mode);
+    });
+
+    const competitionInput = el.querySelector('input[data-field="competition"]');
+    if(competitionInput){
+      competitionInput.addEventListener('input', () => {
+        getCov(m.id).competition = competitionInput.value;
+      });
+      competitionInput.addEventListener('blur', () => {
+        if(mode === 'other' || filterActive(mode)) renderForMode(mode);
+      });
+    }
+
+    const feeInput = el.querySelector('input[data-field="fee"]');
+    const paidCheck = el.querySelector('input[data-field="paid"]');
+    if(feeInput && paidCheck){
+      feeInput.addEventListener('input', () => {
+        getCov(m.id).fee = feeInput.value;
+        renderSummaries();
+      });
+      feeInput.addEventListener('blur', () => {
+        // Other Matches also render inline under Past, so pick up the new fee there too.
+        if(mode === 'other' || filterActive(mode)) renderForMode(mode);
+      });
+      paidCheck.addEventListener('change', () => {
+        const cov = getCov(m.id);
+        cov.paid = paidCheck.checked;
+        feeInput.disabled = cov.paid;
+        feeInput.classList.toggle('paid', cov.paid);
+        renderSummaries();
+        if(mode === 'other') renderForMode(mode);
+      });
+    }
+
+    const incomeList = el.querySelector('.income-list');
+    if(incomeList){
+      incomeList.querySelectorAll('.income-row').forEach(row => {
+        const idx = parseInt(row.dataset.idx, 10);
+        const clientInput = row.querySelector('input[data-field="client"]');
+        const incomeFeeInput = row.querySelector('input[data-field="incomeFee"]');
+        const incomePaidCheck = row.querySelector('input[data-field="incomePaid"]');
+        const removeBtn = row.querySelector('.remove-income-btn');
+        clientInput.addEventListener('input', () => {
+          getCov(m.id).income[idx].client = clientInput.value;
+        });
+        clientInput.addEventListener('blur', () => {
+          if(mode === 'other' || filterActive(mode)) renderForMode(mode);
+        });
+        incomeFeeInput.addEventListener('input', () => {
+          getCov(m.id).income[idx].fee = incomeFeeInput.value;
+          renderSummaries();
+        });
+        incomeFeeInput.addEventListener('blur', () => {
+          if(mode === 'other' || filterActive(mode)) renderForMode(mode);
+        });
+        incomePaidCheck.addEventListener('change', () => {
+          const cov = getCov(m.id);
+          cov.income[idx].paid = incomePaidCheck.checked;
+          incomeFeeInput.disabled = incomePaidCheck.checked;
+          incomeFeeInput.classList.toggle('paid', incomePaidCheck.checked);
+          renderSummaries();
+          if(mode === 'other') renderForMode(mode);
+        });
+        removeBtn.addEventListener('click', () => {
+          getCov(m.id).income.splice(idx, 1);
+          renderSummaries();
+          renderForMode(mode);
+          scheduleSave();
+        });
+      });
+      const addIncomeBtn = el.querySelector('.add-income-btn');
+      if(addIncomeBtn){
+        addIncomeBtn.addEventListener('click', () => {
+          getCov(m.id).income.push({ client: '', fee: '', paid: false });
+          renderForMode(mode);
+          scheduleSave();
+        });
+      }
+    }
+  }
+
+  function badgeHtml(m){
+    const cov = getCov(m.id);
+    if(cov.reqStatus){
+      const labels = {confirmed:'Confirmed', requested:'Requested', declined:'Declined'};
+      return '<span class="badge badge-'+cov.reqStatus+'">' + (cov.person ? cov.person + ' · ' : '') + labels[cov.reqStatus] + '</span>';
+    }
+    if(cov.person) return '<span class="badge">' + cov.person + '</span>';
+    return '';
+  }
+
+  function renderPresent(){
+    const container = document.getElementById('present-content');
+    container.innerHTML = '';
+    if(presentMWs.length === 0){
+      container.innerHTML = '<div class="empty-state">No upcoming matchweeks found — the season may be complete.</div>';
+      updateFilterCount('present', 0, 0);
+      return;
+    }
+    let shown = 0, total = 0;
+    presentMWs.forEach(mw => {
+      const allInMW = matchesForMW(mw.matchweek);
+      total += allInMW.length;
+      const matches = allInMW.filter(m => matchPassesFilter(m, 'present'));
+      if(matches.length === 0) return;
+      shown += matches.length;
+      const group = document.createElement('div');
+      group.className = 'mw-group';
+      group.innerHTML = '<div class="mw-heading"><h2>Matchweek ' + mw.matchweek + '</h2><span class="range">' + fmtRange(mw.roundStart, mw.roundEnd) + '</span></div>'
+        + matches.map(m => renderCoverageCard(m, 'present')).join('');
+      container.appendChild(group);
+      matches.forEach(m => wireCard(group.querySelector('[data-id="'+m.id+'"]'), m, 'present'));
+    });
+    if(shown === 0){
+      container.innerHTML = '<div class="empty-state">No matches found for these filters.</div>';
+    }
+    updateFilterCount('present', shown, total);
+  }
+
+  function renderPast(){
+    const container = document.getElementById('past-content');
+    container.innerHTML = '';
+    let shown = 0, total = 0;
+    let groupsAppended = 0;
+
+    // Premier League past matchweeks, most recent first
+    [...pastMWs].reverse().forEach(mw => {
+      const allInMW = matchesForMW(mw.matchweek);
+      total += allInMW.length;
+      const matches = allInMW.filter(m => matchPassesFilter(m, 'past'));
+      if(matches.length === 0) return;
+      shown += matches.length;
+      groupsAppended++;
+      const group = document.createElement('div');
+      group.className = 'mw-group';
+      group.innerHTML = '<div class="mw-heading"><h2>Matchweek ' + mw.matchweek + '</h2><span class="range">' + fmtRange(mw.roundStart, mw.roundEnd) + '</span></div>'
+        + matches.map(m => renderCoverageCard(m, 'past')).join('');
+      container.appendChild(group);
+      matches.forEach(m => wireCard(group.querySelector('[data-id="'+m.id+'"]'), m, 'past'));
+    });
+
+    // Other Matches (non-Premier League games from pasted data) drop in here under Past once their
+    // date has passed — Present/Future stay Premier League-only, and upcoming Other Matches stay on
+    // the dedicated Other Matches page until they're complete.
+    const others = completedOtherMatches();
+    if(others.length > 0){
+      groupsAppended++;
+      const group = document.createElement('div');
+      group.className = 'mw-group';
+      group.innerHTML = '<div class="mw-heading"><h2>Other Matches</h2><span class="range">Not part of the Premier League schedule</span></div>'
+        + others.map(m => renderCoverageCard(m, 'other')).join('');
+      container.appendChild(group);
+      others.forEach(m => wireCard(group.querySelector('[data-id="'+m.id+'"]'), m, 'other'));
+    }
+
+    if(groupsAppended === 0){
+      container.innerHTML = pastMWs.length === 0 && others.length === 0
+        ? '<div class="empty-state">No matchweeks have been completed yet this season, and no other matches have been completed yet.</div>'
+        : '<div class="empty-state">No matches found for these filters.</div>';
+    }
+    updateFilterCount('past', shown, total);
+  }
+
+  function renderFuture(){
+    const container = document.getElementById('future-content');
+    container.innerHTML = '';
+    if(futureMWs.length === 0){
+      container.innerHTML = '<div class="empty-state">No further matchweeks beyond the present window.</div>';
+      updateFilterCount('future', 0, 0);
+      return;
+    }
+    let shown = 0, total = 0;
+    futureMWs.forEach(mw => {
+      const allInMW = matchesForMW(mw.matchweek);
+      total += allInMW.length;
+      const matches = allInMW.filter(m => matchPassesFilter(m, 'future'));
+      if(matches.length === 0) return;
+      shown += matches.length;
+      const det = document.createElement('details');
+      det.className = 'future-mw';
+      det.open = filterActive('future');
+      const summary = document.createElement('summary');
+      summary.innerHTML = 'Matchweek ' + mw.matchweek + ' <span class="range">' + fmtRange(mw.roundStart, mw.roundEnd) + '</span>';
+      det.appendChild(summary);
+      const body = document.createElement('div');
+      body.className = 'future-mw-body';
+      body.innerHTML = matches.map(m => renderCoverageCard(m, 'future')).join('');
+      det.appendChild(body);
+      container.appendChild(det);
+      matches.forEach(m => wireCard(body.querySelector('[data-id="'+m.id+'"]'), m, 'future'));
+    });
+    if(shown === 0){
+      container.innerHTML = '<div class="empty-state">No matches found for these filters.</div>';
+    }
+    updateFilterCount('future', shown, total);
+  }
+
+  function renderOtherMatches(){
+    const container = document.getElementById('other-content');
+    container.innerHTML = '';
+    const all = allOtherMatches();
+    if(all.length === 0){
+      container.innerHTML = '<div class="empty-state">No other-competition games yet — paste your tracker rows and anything outside the 2026-27 Premier League list will show up here automatically.</div>';
+      updateFilterCount('other', 0, 0);
+      return;
+    }
+    const matches = all.filter(m => matchPassesFilter(m, 'other'));
+    if(matches.length === 0){
+      container.innerHTML = '<div class="empty-state">No matches found for these filters.</div>';
+    } else {
+      container.innerHTML = matches.map(m => renderCoverageCard(m, 'other')).join('');
+      matches.forEach(m => wireCard(container.querySelector('[data-id="'+m.id+'"]'), m, 'other'));
+    }
+    updateFilterCount('other', matches.length, all.length);
+    updateOtherMatchesButton();
+  }
+
+  function updateOtherMatchesButton(){
+    const btn = document.getElementById('other-matches-btn');
+    if(!btn) return;
+    const count = Object.keys(otherMeta).length;
+    btn.textContent = count > 0 ? 'Other Matches (' + count + ')' : 'Other Matches';
+  }
+
+  // A clickable stat "chip" that filters its tab down to matches with the given status.
+  // statusValue '' means "show everything" (the total-count chip).
+  function statChip(mode, statusValue, count, label, colorClass, highlightWhenNonZero){
+    const isActive = (filters[mode].status || '') === statusValue;
+    const cls = 'stat clickable' + (colorClass ? ' ' + colorClass : '') + (isActive ? ' active-filter' : '')
+      + (highlightWhenNonZero && count > 0 ? ' has-items' : '');
+    return '<div class="' + cls + '" data-status-filter="' + statusValue + '" data-mode="' + mode + '">'
+      + '<div class="num">' + count + '</div><div class="label">' + label + '</div></div>';
+  }
+
+  function renderSummaries(){
+    const presentEl = document.getElementById('present-summary');
+    const presentMatches = presentMWs.flatMap(mw => matchesForMW(mw.matchweek));
+    const reqCount = presentMatches.filter(m => getCov(m.id).reqStatus === 'requested').length;
+    const confCount = presentMatches.filter(m => getCov(m.id).reqStatus === 'confirmed').length;
+    const declCount = presentMatches.filter(m => getCov(m.id).reqStatus === 'declined').length;
+    const hiredCount = presentMatches.filter(m => getCov(m.id).reqStatus === 'hired').length;
+    const passCount = presentMatches.filter(m => getCov(m.id).reqStatus === 'pass').length;
+    const noneCount = presentMatches.length - reqCount - confCount - declCount - hiredCount - passCount;
+    const urgentCount = presentMatches.filter(m => isUrgent(m)).length;
+    const pastMatches = pastMWs.flatMap(mw => matchesForMW(mw.matchweek));
+    const otherMatches = allOtherMatches(); // every Other Match, upcoming or complete — for the running grand total
+    const completedOthers = completedOtherMatches(); // only ones whose date has passed — these are the ones under Past
+    const grandTotalOwed = totalOwed([...presentMatches, ...pastMatches, ...otherMatches]);
+    const grandTotalIncome = totalIncomeOwed([...presentMatches, ...pastMatches, ...otherMatches]);
+
+    presentEl.innerHTML =
+      statChip('present', '', presentMatches.length, 'Games (next 3 MW)', '')
+      + statChip('present', 'confirmed', confCount, 'Confirmed', 'good')
+      + statChip('present', 'requested', reqCount, 'Requested', 'warn')
+      + statChip('present', 'declined', declCount, 'Declined', 'bad')
+      + statChip('present', 'hired', hiredCount, 'Hired freelancer', 'hired')
+      + statChip('present', 'pass', passCount, 'Pass', '')
+      + statChip('present', 'none', noneCount, 'Not requested yet', '')
+      + statChip('present', 'urgent', urgentCount, 'Urgent request ⚠', 'urgent', true)
+      + '<div class="stat money clickable" data-owed-kind="expense"><div class="num">' + fmtMoney(grandTotalOwed) + '</div><div class="label">Total owed (unpaid) ▸</div></div>'
+      + '<div class="stat money-in clickable" data-owed-kind="income"><div class="num">' + fmtMoney(grandTotalIncome) + '</div><div class="label">Total owed to me ▸</div></div>';
+
+    const pastEl = document.getElementById('past-summary');
+    const coveredCount = pastMatches.filter(m => getCov(m.id).coverStatus === 'covered').length;
+    const notCoveredCount = pastMatches.filter(m => getCov(m.id).coverStatus === 'not_covered').length;
+    const unmarkedCount = pastMatches.length - coveredCount - notCoveredCount;
+    const pastOwed = totalOwed([...pastMatches, ...completedOthers]);
+    const pastIncome = totalIncomeOwed([...pastMatches, ...completedOthers]);
+    pastEl.innerHTML =
+      statChip('past', '', pastMatches.length, 'Games played', '')
+      + statChip('past', 'covered', coveredCount, 'Covered', 'good')
+      + statChip('past', 'not_covered', notCoveredCount, 'Not covered', 'bad')
+      + statChip('past', 'none', unmarkedCount, 'Unmarked', '')
+      + '<div class="stat money clickable" data-owed-kind="expense"><div class="num">' + fmtMoney(pastOwed) + '</div><div class="label">Owed from past games ▸</div></div>'
+      + '<div class="stat money-in clickable" data-owed-kind="income"><div class="num">' + fmtMoney(pastIncome) + '</div><div class="label">Owed to me (past) ▸</div></div>';
+  }
+
+  // ---- filter bars ----
+  function filterActive(mode){
+    const f = filters[mode];
+    return !!(f.photographer || f.status || f.dateFrom || f.dateTo || f.search);
+  }
+
+  function updateFilterCount(mode, shown, total){
+    const el = document.getElementById('filter-count-' + mode);
+    if(!el) return;
+    el.textContent = filterActive(mode) ? ('Showing ' + shown + ' of ' + total) : (total + ' match' + (total===1?'':'es'));
+  }
+
+  const statusOptionsByMode = {
+    present: [['','All statuses'],['confirmed','Confirmed'],['requested','Requested'],['declined','Declined'],['hired','Hired freelancer'],['pass','Pass'],['none','Not requested'],['urgent','Urgent request']],
+    past:    [['','All statuses'],['covered','Covered'],['not_covered','Not covered'],['none','Unmarked']],
+    future:  [['','All statuses'],['confirmed','Confirmed'],['requested','Requested'],['declined','Declined'],['hired','Hired freelancer'],['pass','Pass'],['none','Not requested']],
+    other:   [['','All statuses'],['confirmed','Confirmed'],['requested','Requested'],['declined','Declined'],['hired','Hired freelancer'],['pass','Pass'],['none','Not requested']]
+  };
+
+  function emptyFilterState(mode){
+    return mode === 'other'
+      ? { photographer: '', status: '', dateFrom: '', dateTo: '', search: '' }
+      : { photographer: '', status: '', dateFrom: '', dateTo: '' };
+  }
+
+  function buildFilterBar(mode){
+    const bar = document.getElementById('filter-bar-' + mode);
+    const statusOpts = statusOptionsByMode[mode].map(([v,l]) => '<option value="'+v+'">'+l+'</option>').join('');
+    const searchHtml = mode !== 'other' ? '' :
+      '<div class="filter-field">'
+        + '<label>Search team / competition</label>'
+        + '<input type="text" id="filter-search-other" placeholder="e.g. Championship, Leyton Orient…">'
+      + '</div>';
+    const nextMwHtml = mode !== 'present' ? '' :
+      '<div class="filter-clear-wrap"><button class="btn" id="filter-next-mw-present">Next matchweek only</button></div>';
+    bar.innerHTML =
+      '<div class="filter-field">'
+        + '<label>Photographer</label>'
+        + '<select id="filter-photographer-' + mode + '"><option value="">All photographers</option></select>'
+      + '</div>'
+      + '<div class="filter-field">'
+        + '<label>Status</label>'
+        + '<select id="filter-status-' + mode + '">' + statusOpts + '</select>'
+      + '</div>'
+      + '<div class="filter-field date-range">'
+        + '<div><label>From</label><input type="date" id="filter-date-from-' + mode + '"></div>'
+        + '<div><label>To</label><input type="date" id="filter-date-to-' + mode + '"></div>'
+      + '</div>'
+      + searchHtml
+      + nextMwHtml
+      + '<div class="filter-clear-wrap"><button class="btn" id="filter-clear-' + mode + '">Clear filters</button></div>'
+      + '<div class="filter-count" id="filter-count-' + mode + '"></div>';
+
+    document.getElementById('filter-photographer-' + mode).addEventListener('change', (e) => {
+      filters[mode].photographer = e.target.value;
+      renderForMode(mode);
+    });
+    document.getElementById('filter-status-' + mode).addEventListener('change', (e) => {
+      filters[mode].status = e.target.value;
+      renderForMode(mode);
+    });
+    document.getElementById('filter-date-from-' + mode).addEventListener('change', (e) => {
+      filters[mode].dateFrom = e.target.value;
+      renderForMode(mode);
+      if(mode === 'present') syncNextMwButtonState();
+    });
+    document.getElementById('filter-date-to-' + mode).addEventListener('change', (e) => {
+      filters[mode].dateTo = e.target.value;
+      renderForMode(mode);
+      if(mode === 'present') syncNextMwButtonState();
+    });
+    if(mode === 'other'){
+      document.getElementById('filter-search-other').addEventListener('input', (e) => {
+        filters.other.search = e.target.value;
+        renderForMode('other');
+      });
+    }
+    if(mode === 'present'){
+      document.getElementById('filter-next-mw-present').addEventListener('click', () => {
+        if(presentMWs.length === 0) return;
+        const mw = presentMWs[0];
+        const alreadyActive = filters.present.dateFrom === mw.roundStart && filters.present.dateTo === mw.roundEnd;
+        filters.present.dateFrom = alreadyActive ? '' : mw.roundStart;
+        filters.present.dateTo = alreadyActive ? '' : mw.roundEnd;
+        document.getElementById('filter-date-from-present').value = filters.present.dateFrom;
+        document.getElementById('filter-date-to-present').value = filters.present.dateTo;
+        syncNextMwButtonState();
+        renderForMode('present');
+      });
+    }
+    document.getElementById('filter-clear-' + mode).addEventListener('click', () => {
+      filters[mode] = emptyFilterState(mode);
+      document.getElementById('filter-photographer-' + mode).value = '';
+      document.getElementById('filter-status-' + mode).value = '';
+      document.getElementById('filter-date-from-' + mode).value = '';
+      document.getElementById('filter-date-to-' + mode).value = '';
+      if(mode === 'other') document.getElementById('filter-search-other').value = '';
+      if(mode === 'present') syncNextMwButtonState();
+      renderForMode(mode);
+    });
+  }
+
+  // Keeps the "Next matchweek only" button visually pressed when its date range is the active filter.
+  function syncNextMwButtonState(){
+    const btn = document.getElementById('filter-next-mw-present');
+    if(!btn) return;
+    const isActive = presentMWs.length > 0
+      && filters.present.dateFrom === presentMWs[0].roundStart
+      && filters.present.dateTo === presentMWs[0].roundEnd;
+    btn.classList.toggle('active-filter', isActive);
+  }
+
+  function renderForMode(mode){
+    if(mode === 'present') renderPresent();
+    else if(mode === 'past') renderPast();
+    else if(mode === 'other'){
+      // Other Matches entries also render inline under Past, so keep both views in sync.
+      renderOtherMatches();
+      renderPast();
+    }
+    else renderFuture();
+  }
+
+  function refreshPhotographerOptions(){
+    ['present','past','future','other'].forEach(mode => {
+      const select = document.getElementById('filter-photographer-' + mode);
+      if(!select) return;
+      const current = filters[mode].photographer;
+      const names = [...new Set(Object.values(coverage).map(c => c.person).filter(Boolean))].sort((a,b) => a.localeCompare(b));
+      select.innerHTML = '<option value="">All photographers</option>' + names.map(n => '<option value="'+n.replace(/"/g,'&quot;')+'"'+(n===current?' selected':'')+'>'+n+'</option>').join('');
+      // if the previously selected photographer no longer exists, reset that filter
+      if(current && !names.includes(current)){
+        filters[mode].photographer = '';
+      }
+    });
+  }
+
+  // ---- tabs ----
+  const tabBtns = document.querySelectorAll('.tab-btn');
+  const panels = { present: document.getElementById('panel-present'), past: document.getElementById('panel-past'), future: document.getElementById('panel-future') };
+  function activateTab(name){
+    tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    Object.entries(panels).forEach(([k,el]) => el.classList.toggle('active', k === name));
+  }
+  tabBtns.forEach(b => b.addEventListener('click', () => activateTab(b.dataset.tab)));
+
+  // ---- autosave (browser localStorage) ----
+  // Every edit is saved automatically to this browser so nothing is lost between visits.
+  // This only lives on this device/browser though — Export/Import (.json) is still how you
+  // back the data up or move it to another computer or browser.
+  const STORAGE_KEY = 'plCoveragePlannerData';
+  const saveStatusEl = document.getElementById('save-status');
+  let saveTimer = null;
+
+  function saveToLocalStorage(){
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ savedAt: new Date().toISOString(), coverage, otherMeta }));
+      if(saveStatusEl){
+        saveStatusEl.textContent = 'Saved in this browser';
+        saveStatusEl.classList.add('saved');
+      }
+    } catch(e) {
+      // Storage unavailable (private browsing, quota exceeded, embedded frame, etc.) — fail
+      // quietly and fall back to Export/Import; the app still works fully without it.
+      if(saveStatusEl){
+        saveStatusEl.textContent = 'Autosave unavailable here — use Export to keep a copy';
+        saveStatusEl.classList.remove('saved');
+      }
+    }
+  }
+
+  function scheduleSave(){
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveToLocalStorage, 400);
+  }
+
+  function loadFromLocalStorage(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return false;
+      const parsed = JSON.parse(raw);
+      if(parsed && parsed.coverage){
+        Object.assign(coverage, parsed.coverage);
+        if(parsed.otherMeta) Object.assign(otherMeta, parsed.otherMeta);
+        return true;
+      }
+    } catch(e) { /* ignore corrupt/unavailable storage, start fresh */ }
+    return false;
+  }
+
+  // Catch-all: any typed field or toggle anywhere on the page schedules a save, so individual
+  // handlers above don't each need to remember to call it.
+  document.addEventListener('input', scheduleSave, true);
+  document.addEventListener('change', scheduleSave, true);
+
+  // ---- export / import ----
+  document.getElementById('export-btn').addEventListener('click', () => {
+    const payload = { exportedAt: new Date().toISOString(), coverage, otherMeta };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'pl-2026-27-coverage.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+  document.getElementById('import-btn').addEventListener('click', () => {
+    document.getElementById('import-file').click();
+  });
+  document.getElementById('import-file').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const parsed = JSON.parse(reader.result);
+        if(parsed && parsed.coverage){
+          Object.assign(coverage, parsed.coverage);
+          if(parsed.otherMeta) Object.assign(otherMeta, parsed.otherMeta);
+          refreshPhotographerOptions();
+          renderPresent();
+          renderPast();
+          renderFuture();
+          renderOtherMatches();
+          renderSummaries();
+          saveToLocalStorage();
+        }
+      }catch(err){
+        alert('Could not read that file: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
+
+  // ---- team name matching ----
+  const canonicalTeams = [...new Set(allMatches.flatMap(m => [m.homeTeam, m.awayTeam]))];
+
+  function normTeam(s){
+    return s.toLowerCase()
+      .replace(/&/g, ' and ')
+      .replace(/[^a-z0-9 ]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w && w !== 'and' && w !== 'afc' && w !== 'fc')
+      .join(' ')
+      .trim();
+  }
+
+  const manualAliases = {
+    'villa': 'Aston Villa',
+    'bournemouth': 'AFC Bournemouth',
+    'brighton': 'Brighton & Hove Albion',
+    'coventry': 'Coventry City',
+    'palace': 'Crystal Palace',
+    'hull': 'Hull City',
+    'ipswich': 'Ipswich Town',
+    'leeds': 'Leeds United',
+    'man city': 'Manchester City',
+    'man utd': 'Manchester United',
+    'man united': 'Manchester United',
+    'newcastle': 'Newcastle United',
+    'forest': 'Nottingham Forest',
+    'nottm forest': 'Nottingham Forest',
+    'notts forest': 'Nottingham Forest',
+    'spurs': 'Tottenham Hotspur',
+    'tottenham': 'Tottenham Hotspur',
+    'sunderland afc': 'Sunderland'
+  };
+
+  const teamAliasMap = {};
+  canonicalTeams.forEach(t => { teamAliasMap[normTeam(t)] = t; });
+  Object.entries(manualAliases).forEach(([alias, canon]) => {
+    if(canonicalTeams.includes(canon)) teamAliasMap[normTeam(alias)] = canon;
+  });
+
+  function resolveTeam(raw){
+    if(!raw) return null;
+    return teamAliasMap[normTeam(raw)] || null;
+  }
+
+  // ---- status matching ----
+  const statusWordMap = {
+    'accepted': 'confirmed', 'confirmed': 'confirmed', 'accept': 'confirmed',
+    'pending': 'requested', 'requested': 'requested', 'request': 'requested', 'sent': 'requested',
+    'rejected': 'declined', 'declined': 'declined', 'decline': 'declined', 'reject': 'declined'
+  };
+  const statusPriority = { confirmed: 3, requested: 2, declined: 1, '': 0 };
+
+  // Build a lookup from (homeTeam|awayTeam) -> match, for exact and swapped order
+  const pairIndex = {};
+  allMatches.forEach(m => {
+    pairIndex[m.homeTeam + '|' + m.awayTeam] = m;
+  });
+
+  const dateVsRegex = /(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s*-?\s*(.+?)\s+v(?:s\.?)?\s+(.+)/i;
+
+  function parsePasteLine(line){
+    if(!line.trim()) return null;
+    let fields = line.split('\t').map(f => f.trim());
+    if(fields.length < 2){
+      fields = line.split(/\s{2,}/).map(f => f.trim());
+    }
+    fields = fields.filter(f => f.length > 0);
+    if(fields.length === 0) return null;
+
+    // status = first field if it's a recognised status word
+    let status = '';
+    let rest = fields.slice();
+    const firstNorm = fields[0] ? fields[0].toLowerCase().trim() : '';
+    if(statusWordMap[firstNorm]){
+      status = statusWordMap[firstNorm];
+      rest = fields.slice(1);
+    }
+
+    // name = next field (skip generic role words if they land first)
+    let name = rest[0] || '';
+    if(/^photographer$/i.test(name) || /^videographer$/i.test(name)){
+      name = rest[1] || '';
+    }
+
+    // find the field containing the date + "Team vs Team" pattern; else search whole line
+    let matchField = fields.find(f => dateVsRegex.test(f));
+    let m = matchField ? matchField.match(dateVsRegex) : line.match(dateVsRegex);
+    if(!m) return { error: 'no date/fixture pattern found', raw: line };
+
+    let [, dd, mm, yyyy, homeRaw, awayRaw] = m;
+    if(yyyy.length === 2) yyyy = '20' + yyyy;
+    const isoDate = yyyy + '-' + mm.padStart(2,'0') + '-' + dd.padStart(2,'0');
+
+    const home = resolveTeam(homeRaw);
+    const away = resolveTeam(awayRaw);
+    if(!home || !away){
+      // Team name(s) don't match any 2026-27 Premier League club — file under Other Matches,
+      // using the text exactly as pasted (we've no canonical name to resolve it to).
+      return { other: true, home: homeRaw.trim(), away: awayRaw.trim(), isoDate, status, name, raw: line,
+        reason: 'not a Premier League fixture' };
+    }
+
+    let fixture = pairIndex[home + '|' + away];
+    let swapped = false;
+    if(!fixture){
+      fixture = pairIndex[away + '|' + home];
+      swapped = true;
+    }
+    if(!fixture){
+      return { other: true, home, away, isoDate, status, name, raw: line, reason: 'not a Premier League fixture' };
+    }
+
+    // Two Premier League clubs can also meet in a cup competition, a friendly, or at reserve/academy
+    // level, on a date that has nothing to do with their league fixture. Team names alone would still
+    // "match" our fixture in that case, so also check the pasted date falls near this fixture's actual
+    // window before trusting the match — otherwise it's a different competition, so file it under
+    // Other Matches instead of overwriting that club's real league fixture.
+    const DATE_TOLERANCE_DAYS = 3;
+    const toleranceMs = DATE_TOLERANCE_DAYS * 86400000;
+    const pastedTime = parseDate(isoDate).getTime();
+    const windowStart = parseDate(fixture.roundStart).getTime() - toleranceMs;
+    const windowEnd = parseDate(fixture.roundEnd).getTime() + toleranceMs;
+    if(pastedTime < windowStart || pastedTime > windowEnd){
+      return { other: true, home, away, isoDate, status, name, raw: line,
+        reason: 'date doesn\'t match their Premier League fixture — likely a cup tie or other competition' };
+    }
+
+    return { fixture, status, name, isoDate, swapped, raw: line };
+  }
+
+  // "Pass" is a manual decision not to request a game, and it's very unlikely to change — so a
+  // re-paste should never quietly undo it. The one exception: if we've actually been approved
+  // since the last paste (i.e. the photographer changed their mind and said yes), that should win.
+  function applyImportedStatus(cov, newStatus){
+    if(!newStatus) return;
+    if(cov.reqStatus === 'pass' && newStatus !== 'confirmed') return;
+    cov.reqStatus = newStatus;
+  }
+
+  function applyPastedData(text){
+    const lines = text.split('\n');
+    const grouped = {};      // fixture.id -> array of parsed rows (Premier League matches)
+    const otherGrouped = {}; // otherKey -> array of parsed rows (everything else)
+    const errors = [];
+    let parsedCount = 0;
+
+    lines.forEach(line => {
+      const result = parsePasteLine(line);
+      if(!result) return;
+      if(result.error){
+        errors.push(result.raw.slice(0,80) + (result.raw.length>80?'…':'') + ' — ' + result.error);
+        return;
+      }
+      parsedCount++;
+      if(result.other){
+        const key = otherKey(result.isoDate, result.home, result.away);
+        if(!otherGrouped[key]) otherGrouped[key] = [];
+        otherGrouped[key].push(result);
+      } else {
+        if(!grouped[result.fixture.id]) grouped[result.fixture.id] = [];
+        grouped[result.fixture.id].push(result);
+      }
+    });
+
+    let matchedFixtures = 0;
+    Object.entries(grouped).forEach(([id, rows]) => {
+      matchedFixtures++;
+      // pick the highest-priority row as the primary assignment
+      const primary = rows.slice().sort((a,b) => (statusPriority[b.status]||0) - (statusPriority[a.status]||0))[0];
+      const cov = getCov(id);
+      if(primary.name) cov.person = primary.name;
+      applyImportedStatus(cov, primary.status);
+      // The import history goes into its own field so it never overwrites notes you've typed by hand.
+      if(rows.length > 1 || primary.name){
+        cov.importLog = rows.map(r => (r.name || 'Unnamed') + ' — ' + (r.status || 'unmarked') + (r.swapped ? ' (listed home/away reversed)' : '')).join('; ');
+      }
+    });
+
+    let otherCount = 0;
+    Object.entries(otherGrouped).forEach(([key, rows]) => {
+      otherCount++;
+      if(!otherMeta[key]){
+        otherMeta[key] = { date: rows[0].isoDate, home: rows[0].home, away: rows[0].away };
+      }
+      const primary = rows.slice().sort((a,b) => (statusPriority[b.status]||0) - (statusPriority[a.status]||0))[0];
+      const cov = getCov(key);
+      if(primary.name) cov.person = primary.name;
+      applyImportedStatus(cov, primary.status);
+      if(rows.length > 1 || primary.name){
+        cov.importLog = rows.map(r => (r.name || 'Unnamed') + ' — ' + (r.status || 'unmarked')).join('; ');
+      }
+    });
+
+    refreshPhotographerOptions();
+    renderPresent();
+    renderPast();
+    renderFuture();
+    renderOtherMatches();
+    renderSummaries();
+    saveToLocalStorage();
+
+    const logEl = document.getElementById('paste-log');
+    let html = '<span class="' + (matchedFixtures>0?'ok':'bad') + '">' + matchedFixtures + ' Premier League fixture(s) updated</span>'
+      + ' from ' + parsedCount + ' row(s) parsed';
+    if(otherCount > 0){
+      html += '<br><span class="ok">' + otherCount + ' game(s) filed under <a href="#" id="paste-log-other-link">Other Matches</a></span> (not part of the 2026-27 Premier League list)';
+    }
+    if(errors.length){
+      html += '<br><span class="bad">' + errors.length + ' row(s) couldn\'t be read at all:</span><ul>'
+        + errors.slice(0,15).map(e => '<li>' + e.replace(/</g,'&lt;') + '</li>').join('')
+        + (errors.length>15 ? '<li>… and ' + (errors.length-15) + ' more</li>' : '')
+        + '</ul>';
+    }
+    logEl.innerHTML = html;
+    const otherLink = document.getElementById('paste-log-other-link');
+    if(otherLink) otherLink.addEventListener('click', (e) => { e.preventDefault(); openOtherMatchesPage(); });
+  }
+
+  document.getElementById('paste-apply-btn').addEventListener('click', () => {
+    const text = document.getElementById('paste-input').value;
+    if(text.trim()) applyPastedData(text);
+  });
+  document.getElementById('paste-clear-btn').addEventListener('click', () => {
+    document.getElementById('paste-input').value = '';
+    document.getElementById('paste-log').innerHTML = '';
+  });
+
+  // ---- "who owes what" modal (money owed to clients / by photographers) ----
+  let currentModalKind = 'income';
+
+  function gatherOwedItems(kind){
+    // Scope matches the fee/income UI itself: Present + Past, plus Other Matches (which live under Past).
+    const matches = [...presentMWs, ...pastMWs].flatMap(mw => matchesForMW(mw.matchweek)).concat(allOtherMatches());
+    const items = [];
+    matches.forEach(m => {
+      const cov = getCov(m.id);
+      const dateLabel = m.date ? fmtDate(m.date) : fmtRange(m.roundStart, m.roundEnd);
+      const fixture = m.homeTeam + ' v ' + m.awayTeam;
+      const mwLabel = m.matchweek || 'Other';
+      if(kind === 'expense'){
+        const fee = parseFloat(cov.fee);
+        if(!cov.paid && !isNaN(fee) && fee > 0){
+          items.push({ matchweek: mwLabel, dateLabel, fixture, who: cov.person || '(no photographer set)', fee });
+        }
+      } else {
+        cov.income.forEach(entry => {
+          const fee = parseFloat(entry.fee);
+          if(!entry.paid && !isNaN(fee) && fee > 0){
+            items.push({ matchweek: mwLabel, dateLabel, fixture, who: entry.client || '(no client set)', fee });
+          }
+        });
+      }
+    });
+    return items;
+  }
+
+  function renderOwedModalTable(){
+    const kind = currentModalKind;
+    const filterVal = document.getElementById('owed-modal-filter').value;
+    const items = gatherOwedItems(kind).filter(i => !filterVal || i.who === filterVal);
+    const whoLabel = kind === 'income' ? 'Client' : 'Photographer';
+    document.querySelector('#owed-modal-table thead').innerHTML =
+      '<tr><th>Date</th><th>MW</th><th>Fixture</th><th>' + whoLabel + '</th><th>Fee</th></tr>';
+    document.querySelector('#owed-modal-table tbody').innerHTML = items.length
+      ? items.map(i => '<tr><td>' + escapeHtml(i.dateLabel) + '</td><td>' + i.matchweek + '</td><td>' + escapeHtml(i.fixture) + '</td><td>' + escapeHtml(i.who) + '</td><td>' + fmtMoney(i.fee) + '</td></tr>').join('')
+      : '<tr><td colspan="5" style="color:var(--text-dim);text-align:center;padding:24px;">Nothing outstanding here.</td></tr>';
+    const total = items.reduce((s,i) => s + i.fee, 0);
+    document.getElementById('owed-modal-total').textContent = 'Total: ' + fmtMoney(total);
+    currentModalItems = items;
+  }
+  let currentModalItems = [];
+
+  function openOwedModal(kind){
+    currentModalKind = kind;
+    const isIncome = kind === 'income';
+    document.getElementById('owed-modal-title').textContent = isIncome ? 'Outstanding client invoices' : 'Outstanding photographer payments';
+    document.getElementById('owed-modal-filter-label').textContent = isIncome ? 'Client' : 'Photographer';
+    const items = gatherOwedItems(kind);
+    const names = [...new Set(items.map(i => i.who))].sort((a,b) => a.localeCompare(b));
+    const filterSel = document.getElementById('owed-modal-filter');
+    filterSel.innerHTML = '<option value="">All ' + (isIncome?'clients':'photographers') + '</option>'
+      + names.map(n => '<option value="'+escapeHtml(n)+'">'+escapeHtml(n)+'</option>').join('');
+    filterSel.value = '';
+    renderOwedModalTable();
+    document.getElementById('owed-modal-overlay').classList.add('open');
+  }
+
+  function applyStatChipClick(statEl){
+    const mode = statEl.dataset.mode;
+    const value = statEl.dataset.statusFilter;
+    if(value === ''){
+      // the total-count chip: reset every filter for this tab
+      filters[mode] = { photographer: '', status: '', dateFrom: '', dateTo: '' };
+    } else {
+      // toggle: clicking the same chip twice clears the status filter again
+      filters[mode].status = (filters[mode].status === value) ? '' : value;
+    }
+    const photSel = document.getElementById('filter-photographer-' + mode);
+    const statusSel = document.getElementById('filter-status-' + mode);
+    const fromInp = document.getElementById('filter-date-from-' + mode);
+    const toInp = document.getElementById('filter-date-to-' + mode);
+    if(photSel) photSel.value = filters[mode].photographer;
+    if(statusSel) statusSel.value = filters[mode].status;
+    if(fromInp) fromInp.value = filters[mode].dateFrom;
+    if(toInp) toInp.value = filters[mode].dateTo;
+    renderForMode(mode);
+    renderSummaries();
+  }
+
+  document.getElementById('present-summary').addEventListener('click', (e) => {
+    const owedEl = e.target.closest('.stat[data-owed-kind]');
+    if(owedEl){ openOwedModal(owedEl.dataset.owedKind); return; }
+    const statEl = e.target.closest('.stat[data-status-filter]');
+    if(statEl) applyStatChipClick(statEl);
+  });
+  document.getElementById('past-summary').addEventListener('click', (e) => {
+    const owedEl = e.target.closest('.stat[data-owed-kind]');
+    if(owedEl){ openOwedModal(owedEl.dataset.owedKind); return; }
+    const statEl = e.target.closest('.stat[data-status-filter]');
+    if(statEl) applyStatChipClick(statEl);
+  });
+  document.getElementById('owed-modal-filter').addEventListener('change', renderOwedModalTable);
+  document.getElementById('owed-modal-close').addEventListener('click', () => {
+    document.getElementById('owed-modal-overlay').classList.remove('open');
+  });
+  document.getElementById('owed-modal-overlay').addEventListener('click', (e) => {
+    if(e.target.id === 'owed-modal-overlay') document.getElementById('owed-modal-overlay').classList.remove('open');
+  });
+  document.getElementById('owed-modal-export').addEventListener('click', () => {
+    const isIncome = currentModalKind === 'income';
+    const whoLabel = isIncome ? 'Client' : 'Photographer';
+    const rows = [['Date','Matchweek','Fixture',whoLabel,'Fee (GBP)']];
+    currentModalItems.forEach(i => rows.push([i.dateLabel, i.matchweek, i.fixture, i.who, i.fee.toFixed(2)]));
+    const csv = rows.map(r => r.map(cell => '"' + String(cell).replace(/"/g,'""') + '"').join(',')).join('\r\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const filterVal = document.getElementById('owed-modal-filter').value;
+    const suffix = filterVal ? '-' + filterVal.replace(/[^a-z0-9]+/gi,'-').toLowerCase() : '-all';
+    a.download = (isIncome ? 'outstanding-invoices' : 'outstanding-photographer-payments') + suffix + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // ---- "Other Matches" page ----
+  function openOtherMatchesPage(){
+    renderOtherMatches();
+    document.getElementById('other-page-overlay').classList.add('open');
+  }
+  function closeOtherMatchesPage(){
+    document.getElementById('other-page-overlay').classList.remove('open');
+  }
+  document.getElementById('other-matches-btn').addEventListener('click', openOtherMatchesPage);
+  document.getElementById('other-page-close').addEventListener('click', closeOtherMatchesPage);
+  document.getElementById('other-page-overlay').addEventListener('click', (e) => {
+    if(e.target.id === 'other-page-overlay') closeOtherMatchesPage();
+  });
+
+  // ---- init ----
+  const restoredFromBrowser = loadFromLocalStorage();
+  buildFilterBar('present');
+  buildFilterBar('past');
+  buildFilterBar('future');
+  buildFilterBar('other');
+  refreshPhotographerOptions();
+  renderPresent();
+  renderPast();
+  renderFuture();
+  renderOtherMatches();
+  renderSummaries();
+  activateTab('present');
+  if(saveStatusEl){
+    saveStatusEl.textContent = restoredFromBrowser ? 'Restored from this browser' : 'Autosave ready';
+  }
+})();
+</script>
+</body>
+</html>
