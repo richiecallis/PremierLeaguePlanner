@@ -398,6 +398,39 @@
     border-bottom:1px solid var(--border);
     white-space:nowrap;
   }
+  .clashes-modal-note{
+    margin:0;
+    padding:0 20px 14px;
+    color:var(--text-dim);
+    font-size:12.5px;
+  }
+  #clashes-modal-table td:nth-child(3){
+    white-space:normal;
+  }
+  #clashes-modal-table .clash-game-line{
+    margin:0 0 3px;
+  }
+  #clashes-modal-table .clash-game-line:last-child{
+    margin-bottom:0;
+  }
+  #clashes-modal-table tr.clash-acked{
+    opacity:.45;
+  }
+  .clash-ack-cell{
+    white-space:nowrap;
+  }
+  .clash-ack-label{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    cursor:pointer;
+    font-size:12px;
+    color:var(--text-dim);
+  }
+  .btn.has-clashes{
+    border-color:var(--urgent);
+    color:var(--urgent);
+  }
   .modal-table-wrap th{
     color:var(--text-dim);
     font-size:10.5px;
@@ -627,6 +660,22 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="clashes-modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>Photographer clashes</h3>
+      <button class="btn" id="clashes-modal-close">Close</button>
+    </div>
+    <p class="clashes-modal-note">Same photographer requested, confirmed, or hired for more than one game on the same day. Only games with a confirmed exact date are checked — provisional dates aren't compared. Covers Present, Future, Past, and Other Matches. Tick "OK" once you've confirmed a double-booking is intentional — it'll stop being counted until you next paste in tracker data, at which point it's flagged again if it's still there.</p>
+    <div class="modal-table-wrap">
+      <table id="clashes-modal-table">
+        <thead><tr><th>Date</th><th>Photographer</th><th>Clashing games</th><th>OK?</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <div class="page-overlay" id="other-page-overlay">
   <div class="page-box">
     <div class="page-header">
@@ -652,6 +701,7 @@
     </div>
     <div class="spacer"></div>
     <span class="save-status" id="save-status"></span>
+    <button class="btn" id="clashes-btn">Clashes</button>
     <button class="btn" id="other-matches-btn">Other Matches</button>
     <button class="btn" id="export-btn">Export data (.json)</button>
     <button class="btn" id="import-btn">Import data (.json)</button>
@@ -739,6 +789,10 @@ Pending&#9;Keeran Marquis&#9;Photographer&#9;&#9;22/08/2026 - Ipswich Town vs Su
   // (lower-league, cup ties between PL clubs, friendlies, etc). Keyed by date+teams since there's no
   // fixed fixture list to match against; coverage (status/person/fee/notes/...) reuses the same store above.
   const otherMeta = {}; // id -> { date, home, away }
+  // 'date|normalized person' -> true once you've ticked "OK" to confirm a double-booking is
+  // intentional. Cleared out every time you re-paste tracker data (see applyPastedData) so a
+  // still-outstanding clash gets flagged again rather than staying silently acknowledged forever.
+  const ackClashes = {};
   function otherKey(isoDate, home, away){
     return 'other:' + isoDate + '|' + home.toLowerCase().replace(/\s+/g,' ').trim() + '|' + away.toLowerCase().replace(/\s+/g,' ').trim();
   }
@@ -974,6 +1028,7 @@ Pending&#9;Keeran Marquis&#9;Photographer&#9;&#9;22/08/2026 - Ipswich Town vs Su
     });
     person.addEventListener('blur', () => {
       refreshPhotographerOptions();
+      renderSummaries(); // keeps the Clashes button count in sync with photographer name edits
       if(mode === 'other' || filterActive(mode)) renderForMode(mode);
     });
     notes.addEventListener('input', () => {
@@ -1204,6 +1259,91 @@ Pending&#9;Keeran Marquis&#9;Photographer&#9;&#9;22/08/2026 - Ipswich Town vs Su
     btn.textContent = count > 0 ? 'Other Matches (' + count + ')' : 'Other Matches';
   }
 
+  // ---- photographer clash detection ----
+  // A "clash" is the same photographer requested/confirmed/hired for more than one game on the
+  // same calendar day. Covers Premier League fixtures (present/past/future) and Other Matches
+  // together, since the same photographer pool covers both. Games without a confirmed exact date
+  // (provisional round-only fixtures) are skipped — there's no single day to compare yet.
+  const REQ_STATUS_LABELS = { requested: 'Requested', confirmed: 'Confirmed', hired: 'Hired freelancer' };
+
+  function clashKey(date, person){
+    return date + '|' + person.toLowerCase();
+  }
+
+  function computeClashes(){
+    const groups = {}; // 'date|normalized person' -> { key, date, person, items: [{m, status}] }
+    const universe = allMatches.concat(allOtherMatches());
+    universe.forEach(m => {
+      if(!m.date) return;
+      const cov = getCov(m.id);
+      const status = cov.reqStatus;
+      // Declined (or Passed, or unset) means they're not actually covering it — no clash.
+      if(status !== 'requested' && status !== 'confirmed' && status !== 'hired') return;
+      const person = (cov.person || '').trim();
+      if(!person) return;
+      const key = clashKey(m.date, person);
+      if(!groups[key]) groups[key] = { key, date: m.date, person, items: [] };
+      groups[key].items.push({ m, status });
+    });
+    return Object.values(groups)
+      .filter(g => g.items.length > 1)
+      .map(g => Object.assign(g, { acknowledged: !!ackClashes[g.key] }))
+      .sort((a,b) => a.date.localeCompare(b.date));
+  }
+
+  function clashGameLine(m, status){
+    const label = REQ_STATUS_LABELS[status] || status;
+    const desc = m.matchweek
+      ? 'MW' + m.matchweek + ': ' + m.homeTeam + ' v ' + m.awayTeam
+      : m.homeTeam + ' v ' + m.awayTeam + ' (' + (getCov(m.id).competition || 'Other match') + ')';
+    return desc + ' — ' + label;
+  }
+
+  function renderClashesModal(){
+    const clashes = computeClashes();
+    const tbody = document.querySelector('#clashes-modal-table tbody');
+    if(clashes.length === 0){
+      tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text-dim);text-align:center;padding:24px;">No clashes found.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = clashes.map(g => {
+      const gamesHtml = g.items.map(it => '<div class="clash-game-line">' + escapeHtml(clashGameLine(it.m, it.status)) + '</div>').join('');
+      return '<tr class="' + (g.acknowledged ? 'clash-acked' : '') + '" data-clash-key="' + escapeHtml(g.key) + '">'
+        + '<td>' + escapeHtml(fmtDate(g.date)) + '</td>'
+        + '<td>' + escapeHtml(g.person) + '</td>'
+        + '<td>' + gamesHtml + '</td>'
+        + '<td class="clash-ack-cell"><label class="clash-ack-label"><input type="checkbox" class="clash-ack-check"' + (g.acknowledged ? ' checked' : '') + '> OK</label></td>'
+        + '</tr>';
+    }).join('');
+    tbody.querySelectorAll('.clash-ack-check').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const row = e.target.closest('tr');
+        const key = row.dataset.clashKey;
+        if(e.target.checked) ackClashes[key] = true; else delete ackClashes[key];
+        row.classList.toggle('clash-acked', e.target.checked);
+        updateClashesButton();
+        scheduleSave();
+      });
+    });
+  }
+
+  function updateClashesButton(){
+    const btn = document.getElementById('clashes-btn');
+    if(!btn) return;
+    const clashes = computeClashes();
+    const outstanding = clashes.filter(g => !g.acknowledged).length;
+    btn.textContent = outstanding > 0 ? 'Clashes (' + outstanding + ')' : 'Clashes';
+    btn.classList.toggle('has-clashes', outstanding > 0);
+  }
+
+  function openClashesModal(){
+    renderClashesModal();
+    document.getElementById('clashes-modal-overlay').classList.add('open');
+  }
+  function closeClashesModal(){
+    document.getElementById('clashes-modal-overlay').classList.remove('open');
+  }
+
   // A clickable stat "chip" that filters its tab down to matches with the given status.
   // statusValue '' means "show everything" (the total-count chip).
   function statChip(mode, statusValue, count, label, colorClass, highlightWhenNonZero){
@@ -1215,6 +1355,7 @@ Pending&#9;Keeran Marquis&#9;Photographer&#9;&#9;22/08/2026 - Ipswich Town vs Su
   }
 
   function renderSummaries(){
+    updateClashesButton();
     const presentEl = document.getElementById('present-summary');
     const presentMatches = presentMWs.flatMap(mw => matchesForMW(mw.matchweek));
     const reqCount = presentMatches.filter(m => getCov(m.id).reqStatus === 'requested').length;
@@ -1413,7 +1554,7 @@ Pending&#9;Keeran Marquis&#9;Photographer&#9;&#9;22/08/2026 - Ipswich Town vs Su
 
   function saveToLocalStorage(){
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ savedAt: new Date().toISOString(), coverage, otherMeta }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ savedAt: new Date().toISOString(), coverage, otherMeta, ackClashes }));
       if(saveStatusEl){
         saveStatusEl.textContent = 'Saved in this browser';
         saveStatusEl.classList.add('saved');
@@ -1441,6 +1582,7 @@ Pending&#9;Keeran Marquis&#9;Photographer&#9;&#9;22/08/2026 - Ipswich Town vs Su
       if(parsed && parsed.coverage){
         Object.assign(coverage, parsed.coverage);
         if(parsed.otherMeta) Object.assign(otherMeta, parsed.otherMeta);
+        if(parsed.ackClashes) Object.assign(ackClashes, parsed.ackClashes);
         return true;
       }
     } catch(e) { /* ignore corrupt/unavailable storage, start fresh */ }
@@ -1454,7 +1596,7 @@ Pending&#9;Keeran Marquis&#9;Photographer&#9;&#9;22/08/2026 - Ipswich Town vs Su
 
   // ---- export / import ----
   document.getElementById('export-btn').addEventListener('click', () => {
-    const payload = { exportedAt: new Date().toISOString(), coverage, otherMeta };
+    const payload = { exportedAt: new Date().toISOString(), coverage, otherMeta, ackClashes };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1478,6 +1620,7 @@ Pending&#9;Keeran Marquis&#9;Photographer&#9;&#9;22/08/2026 - Ipswich Town vs Su
         if(parsed && parsed.coverage){
           Object.assign(coverage, parsed.coverage);
           if(parsed.otherMeta) Object.assign(otherMeta, parsed.otherMeta);
+          if(parsed.ackClashes) Object.assign(ackClashes, parsed.ackClashes);
           refreshPhotographerOptions();
           renderPresent();
           renderPast();
@@ -1635,6 +1778,11 @@ Pending&#9;Keeran Marquis&#9;Photographer&#9;&#9;22/08/2026 - Ipswich Town vs Su
   }
 
   function applyPastedData(text){
+    // Every re-paste re-opens the question of whether any double-booking is still a problem —
+    // clear prior "OK" acknowledgments so anything still clashing after this import gets flagged
+    // again rather than staying silently waved off from a previous round.
+    Object.keys(ackClashes).forEach(k => delete ackClashes[k]);
+
     const lines = text.split('\n');
     const grouped = {};      // fixture.id -> array of parsed rows (Premier League matches)
     const otherGrouped = {}; // otherKey -> array of parsed rows (everything else)
@@ -1854,6 +2002,11 @@ Pending&#9;Keeran Marquis&#9;Photographer&#9;&#9;22/08/2026 - Ipswich Town vs Su
   document.getElementById('other-page-close').addEventListener('click', closeOtherMatchesPage);
   document.getElementById('other-page-overlay').addEventListener('click', (e) => {
     if(e.target.id === 'other-page-overlay') closeOtherMatchesPage();
+  });
+  document.getElementById('clashes-btn').addEventListener('click', openClashesModal);
+  document.getElementById('clashes-modal-close').addEventListener('click', closeClashesModal);
+  document.getElementById('clashes-modal-overlay').addEventListener('click', (e) => {
+    if(e.target.id === 'clashes-modal-overlay') closeClashesModal();
   });
 
   // ---- init ----
